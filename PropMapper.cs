@@ -4,117 +4,190 @@ using System.Linq;
 using System.Linq.Expressions;
 using System.Reflection;
 
-namespace Jitbit.Utils
+#nullable enable
+
+namespace DX.Shared
 {
-	/// <summary>
-    /// Creates new Instance and copies all public Properties to the OutPutType
+    /// <summary>
+    /// Static class with Extention Methods for cloning objects
     /// </summary>
-    public static class ClassMapper
+    public static class ClassClonator
     {
         /// <summary>
-        /// Craete a new Object and Copy all Properties to the output Instance
+        /// Copy readable Properties to the output Instances writable properties 
+        /// matched by equal Name
+        /// </summary>
+        /// <typeparam name="TInput"></typeparam>
+        /// <typeparam name="TOutput"></typeparam>
+        /// <param name="input">must not be null</param>
+        /// <param name="output">must not be null</param>
+        /// <returns></returns>
+        public static bool CopyTo<TInput, TOutput>(this TInput input, TOutput output)
+        {
+            return CopyMapper<TInput, TOutput>.CopyTo(input, output);
+        }
+
+        /// <summary>
+        /// Copy readable Properties from the input Instances to the writable properties 
+        /// matched by equal Name
+        /// </summary>
+        /// <typeparam name="TInput"></typeparam>
+        /// <typeparam name="TOutput"></typeparam>
+        /// <param name="input"></param>
+        /// <param name="output"></param>
+        /// <returns></returns>
+        public static bool CopyFrom<TInput, TOutput>(this TOutput output, TInput input)
+        {
+            return CopyMapper<TInput, TOutput>.CopyTo(input, output);
+        }
+
+        /// <summary>
+        /// Craete a new Object and Copy all readable Properties to the returned Instances writable properties 
+        /// matched by equal Name
         /// </summary>
         /// <typeparam name="TInput"></typeparam>
         /// <typeparam name="TOutput"></typeparam>
         /// <param name="input"></param>
         /// <returns></returns>
-        public static TOutput CreateCopy<TInput, TOutput>(TInput input) where TOutput : new()
+        public static TOutput CreateCopy<TInput, TOutput>(this TInput input) where TOutput : new()
         {
-            TOutput op = new TOutput();
-            PropMapper<TInput, TOutput>.CopyTo(input, op);
-            return op;
+            if (input is null)
+            {
+                throw new ArgumentNullException(nameof(input));
+            }
+            return CloneMapper<TInput, TOutput>.From(input);
         }
 
         /// <summary>
-        /// returns a Copy for each Input Instanz
-        /// All public Properties get copied
+        /// returns a Copy for each Object in the input stream
+        /// Copy all readable Properties to the returned Instances writable properties 
+        /// matched by equal Name
         /// </summary>
         /// <typeparam name="TInput"></typeparam>
-        /// <typeparam name="TOutput"></typeparam>
-        /// <param name="inputArr"></param>
+        /// <typeparam name="TOutput">must have a parameterless Konstruktor : new() </typeparam>
+        /// <param name="inputArr">must not be null</param>
         /// <returns></returns>
-        public static IEnumerable<TOutput> CreateCopy<TInput, TOutput>(IEnumerable<TInput> inputArr) where TOutput : new()
+        public static IEnumerable<TOutput> CopyAll<TInput, TOutput>(this IEnumerable<TInput> inputArr) where TOutput : new()
         {
             foreach (TInput input in inputArr)
             {
-                TOutput op = new TOutput();
-                PropMapper<TInput, TOutput>.CopyTo(input, op);
-                yield return op;
+                if (input is null)
+                {
+                    //System.Diagnostics.Debug.Fail($"Input was null {typeof(TInput)}");
+                }
+                else
+                {
+                    yield return CloneMapper<TInput, TOutput>.From(input);
+                }
             }
         }
     }
 
-	//clones object public properties to another object
-	//uses Expressions (compiled and saved to static) - faster than Reflection
-	//(compilation happens with every new generic type call cause it's a new static class each time)
-	public static class PropMapper<TInput, TOutput>
-	{
-		private static readonly Func<TInput, TOutput> _cloner;
-		private static readonly Action<TInput, TOutput> _copier;
+    internal static class PropertyCache<T>
+    {
+        static readonly IEnumerable<PropertyInfo> _WriteProps;
 
-		private static readonly IEnumerable<PropertyInfo> _sourceProperties;
-		private static readonly IEnumerable<PropertyInfo> _destinationProperties;
+        static readonly IEnumerable<PropertyInfo> _ReadProps;
 
-		static PropMapper()
-		{
-			_destinationProperties = typeof(TOutput)
-				.GetProperties(BindingFlags.Public | BindingFlags.Instance)
-				.Where(prop => prop.CanWrite);
-			_sourceProperties = typeof(TInput)
-				.GetProperties(BindingFlags.Public | BindingFlags.Instance)
-				.Where(prop => prop.CanRead);
+        static PropertyCache()
+        {
+            _ReadProps = typeof(T)
+                .GetProperties(BindingFlags.Public | BindingFlags.Instance)
+                .Where(prop => prop.CanRead);
+            _WriteProps = typeof(T)
+                .GetProperties(BindingFlags.Public | BindingFlags.Instance)
+                .Where(prop => prop.CanWrite);
+        }
 
-			_cloner = CreateCloner();
-			_copier = CreateCopier();
-		}
+        public static IEnumerable<PropertyInfo> ReadProps { get { return _ReadProps; } }
 
-		private static Func<TInput, TOutput> CreateCloner()
-		{
-			//check if type has parameterless constructor - just in case
-			if (typeof(TOutput).GetConstructor(Type.EmptyTypes) == null) return ((x) => default(TOutput));
+        public static IEnumerable<PropertyInfo> WriteProps { get { return _WriteProps; } }
 
-			var input = Expression.Parameter(typeof(TInput), "input");
+    }
 
-			// For each property that exists in the destination object, is there a property with the same name in the source object?
-			var memberBindings = _sourceProperties.Join(_destinationProperties,
-				sourceProperty => sourceProperty.Name,
-				destinationProperty => destinationProperty.Name,
-				(sourceProperty, destinationProperty) =>
-					(MemberBinding)Expression.Bind(destinationProperty,
-						Expression.Property(input, sourceProperty)));
+    /// <summary>
+    /// clones object public properties to a new object
+    /// uses Expressions (compiled and saved to static) - faster than Reflection
+    /// (compilation happens with every new generic type call cause it's a new static class each time)
+    /// </summary>
+    /// <typeparam name="TInput"></typeparam>
+    /// <typeparam name="TOutput"></typeparam>
 
-			var body = Expression.MemberInit(Expression.New(typeof(TOutput)), memberBindings);
-			var lambda = Expression.Lambda<Func<TInput, TOutput>>(body, input);
-			return lambda.Compile();
-		}
+    internal class CloneMapper<TInput, TOutput> where TOutput : new()
+    {
+        private static readonly Func<TInput, TOutput> _cloner;
+        
+        static CloneMapper()
+        {
+            _cloner = CreateCloner();
+        }
 
-		private static Action<TInput, TOutput> CreateCopier()
-		{
-			var input = Expression.Parameter(typeof(TInput), "input");
-			var output = Expression.Parameter(typeof(TOutput), "output");
+        private static Func<TInput, TOutput> CreateCloner()
+        {
+            ParameterExpression input = Expression.Parameter(typeof(TInput), "input");
+            // For each property that exists in the destination object, is there a property with the same name in the source object?
+            IEnumerable<MemberBinding> memberBindings = PropertyCache<TInput>.ReadProps.Join(PropertyCache<TOutput>.WriteProps,
+                sourceProperty => sourceProperty.Name,
+                destinationProperty => destinationProperty.Name,
+                (sourceProperty, destinationProperty) =>
+                    (MemberBinding)Expression.Bind(destinationProperty,
+                        Expression.Property(input, sourceProperty)));
 
-			// For each property that exists in the destination object, is there a property with the same name in the source object?
-			var memberAssignments = _sourceProperties.Join(_destinationProperties,
-				sourceProperty => sourceProperty.Name,
-				destinationProperty => destinationProperty.Name,
-				(sourceProperty, destinationProperty) =>
-					Expression.Assign(Expression.Property(output, destinationProperty),
-						Expression.Property(input, sourceProperty)));
+            MemberInitExpression body = Expression.MemberInit(Expression.New(typeof(TOutput)), memberBindings);
+            Expression<Func<TInput, TOutput>> lambda = Expression.Lambda<Func<TInput, TOutput>>(body, input);
+            return lambda.Compile();
+        }
 
-			var body = Expression.Block(memberAssignments);
-			var lambda = Expression.Lambda<Action<TInput, TOutput>>(body, input, output);
-			return lambda.Compile();
-		}
+        public static TOutput From(TInput input)
+        {
+            return _cloner(input);
+        }
+    }
 
-		public static TOutput From(TInput input)
-		{
-			if (input == null) return default(TOutput);
-			return _cloner(input);
-		}
 
-		public static void CopyTo(TInput input, TOutput output)
-		{
-			_copier(input, output);
-		}
-	}
+    /// <summary>
+    /// clones object public properties to an existing object
+    /// uses Expressions (compiled and saved to static) - faster than Reflection
+    /// (compilation happens with every new generic type call cause it's a new static class each time)
+    /// </summary>
+    internal static class CopyMapper<TInput, TOutput>
+    {
+        private static readonly Action<TInput, TOutput> _copier;
+
+        static CopyMapper()
+        {
+            _copier = CreateCopier();
+        }
+
+        private static Action<TInput, TOutput> CreateCopier()
+        {
+            ParameterExpression input = Expression.Parameter(typeof(TInput), "input");
+            ParameterExpression output = Expression.Parameter(typeof(TOutput), "output");
+
+            // For each property that exists in the destination object, is there a property with the same name in the source object?
+            IEnumerable<BinaryExpression> memberAssignments = PropertyCache<TInput>.ReadProps.Join(PropertyCache<TOutput>.WriteProps, 
+                    sourceProperty => sourceProperty.Name,
+                    destinationProperty => destinationProperty.Name,
+                    (sourceProperty, destinationProperty) =>
+                        Expression.Assign(
+                                Expression.Property(output, destinationProperty), 
+                                Expression.Property(input, sourceProperty)
+                        )
+                );
+
+            BlockExpression body = Expression.Block(memberAssignments);
+            Expression<Action<TInput, TOutput>> lambda = Expression.Lambda<Action<TInput, TOutput>>(body, input, output);
+            return lambda.Compile();
+        }
+
+        public static bool CopyTo(TInput input, TOutput output)
+        {
+            if(input is null || output is null)
+            {
+                return false;
+            }
+            _copier(input, output);
+            return true;
+        }
+    }
 }
