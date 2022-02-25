@@ -2,13 +2,15 @@
 
 Property mapper for .NET. Flat and basic, but **VERY FAST**.
 
-Just one cs-file, only 80 lines of code.
+Just [one cs-file](PropMapper.cs), only 80 lines of code.
 
 ## Installation
 
-Drop the cs-file into your project or install via [Nuget](https://www.nuget.org/packages/PropMapper/)
+Drop the cs-file into your project OR install via [Nuget](https://www.nuget.org/packages/PropMapper/)
 
 `Install-Package PropMapper`
+
+(this will will simply add the .cs file to your project, not a DLL-reference, so you're free of dependencies)
 
 ## Usage
 
@@ -52,15 +54,11 @@ public class Tester
 }
 ```
 
-## Limitations 
-
-The project does not support nested properties at the moment, only first level properties.
-
 ## Under the hood
 
 We use compiled Expression trees, created in the static constructor and cached in a var, which makes it really fast.
 
-## Use case
+## Use case: casting base class to derived class
 
 ```cs
 public class Person
