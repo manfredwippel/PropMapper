@@ -6,6 +6,7 @@ obj/
 PropMapper.Test.csproj
 PropMapperTests.cs
 PropMapper.Tests/
+PropMapper.Demo/
 
 # Old implementation backup
 PropMapper.Old.cs

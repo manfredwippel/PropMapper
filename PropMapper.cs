@@ -75,8 +75,11 @@ namespace DX.Shared
                 return mapper.Map(input);
             }
             
-            // Fallback: create empty object if no mapper was generated
-            return new TOutput();
+            // If no mapper was generated, it means no properties matched or the source generator didn't run
+            // This is likely a compile-time configuration issue
+            throw new InvalidOperationException(
+                $"No mapper was generated for {typeof(TInput).Name} -> {typeof(TOutput).Name}. " +
+                "Ensure the source generator is properly configured and the types have matching public properties.");
         }
     }
 
@@ -101,7 +104,10 @@ namespace DX.Shared
                 return true;
             }
             
-            return false;
+            // If no mapper was generated, it means no properties matched or the source generator didn't run
+            throw new InvalidOperationException(
+                $"No mapper was generated for {typeof(TInput).Name} -> {typeof(TOutput).Name}. " +
+                "Ensure the source generator is properly configured and the types have matching public properties.");
         }
     }
 

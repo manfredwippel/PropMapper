@@ -38,14 +38,18 @@ namespace DX.Shared.SourceGenerator
                 return name == "CloneMapper" || name == "CopyMapper";
             }
 
-            // Also look for extension method calls
+            // Also look for extension method calls from ClassClonator
             if (node is InvocationExpressionSyntax invocation)
             {
-                var expression = invocation.Expression.ToString();
-                return expression.Contains("CopyTo") ||
-                       expression.Contains("CopyFrom") ||
-                       expression.Contains("CreateCopy") ||
-                       expression.Contains("CopyAll");
+                var memberAccess = invocation.Expression as MemberAccessExpressionSyntax;
+                if (memberAccess != null)
+                {
+                    var memberName = memberAccess.Name.Identifier.Text;
+                    return memberName == "CopyTo" || 
+                           memberName == "CopyFrom" || 
+                           memberName == "CreateCopy" || 
+                           memberName == "CopyAll";
+                }
             }
 
             return false;
@@ -305,13 +309,15 @@ namespace DX.Shared.SourceGenerator
 
         private static string SanitizeTypeName(string name)
         {
-            // Remove generic markers and special characters that can't be in file names
+            // Remove generic markers and special characters that can't be in identifiers
+            // Also replace dots from namespaces to ensure uniqueness
             return name
                 .Replace("<", "_")
                 .Replace(">", "_")
                 .Replace(",", "_")
                 .Replace(" ", "")
-                .Replace("`", "_");
+                .Replace("`", "_")
+                .Replace(".", "_");
         }
 
         private class MapperTypePair
