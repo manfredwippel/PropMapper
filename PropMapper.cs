@@ -9,46 +9,74 @@ using System.Reflection;
 namespace DX.Shared
 {
     /// <summary>
-    /// Static class with Extension Methods for cloning objects
+    /// Static class with extension methods for fast property mapping between objects.
+    /// Uses compiled Expression trees for optimal performance.
     /// </summary>
+    /// <remarks>
+    /// This class provides high-performance object-to-object mapping through extension methods.
+    /// The first mapping between two specific types has a small overhead due to expression compilation,
+    /// but subsequent calls are extremely fast due to cached compiled expressions.
+    /// All operations are thread-safe.
+    /// </remarks>
     public static class ClassClonator
     {
         /// <summary>
-        /// Copy readable Properties to the output Instances writable properties 
-        /// matched by equal Name
+        /// Copies all readable properties from the input object to the output object's writable properties,
+        /// matched by property name (case-sensitive).
         /// </summary>
-        /// <typeparam name="TInput"></typeparam>
-        /// <typeparam name="TOutput"></typeparam>
-        /// <param name="input">must not be null</param>
-        /// <param name="output">must not be null</param>
-        /// <returns></returns>
+        /// <typeparam name="TInput">The type of the source object</typeparam>
+        /// <typeparam name="TOutput">The type of the destination object</typeparam>
+        /// <param name="input">The source object to copy properties from</param>
+        /// <param name="output">The destination object to copy properties to</param>
+        /// <returns>True if the copy was successful; false if either input or output is null</returns>
+        /// <example>
+        /// <code>
+        /// var person = new Person { FirstName = "John", LastName = "Doe" };
+        /// var dto = new PersonDTO();
+        /// person.CopyTo(dto); // Copies matching properties
+        /// </code>
+        /// </example>
         public static bool CopyTo<TInput, TOutput>(this TInput input, TOutput output)
         {
             return CopyMapper<TInput, TOutput>.CopyTo(input, output);
         }
 
         /// <summary>
-        /// Copy readable Properties from the input Instances to the writable properties 
-        /// matched by equal Name
+        /// Copies all readable properties from the input object to the current object's writable properties,
+        /// matched by property name (case-sensitive). This is the inverse of <see cref="CopyTo{TInput,TOutput}"/>.
         /// </summary>
-        /// <typeparam name="TInput"></typeparam>
-        /// <typeparam name="TOutput"></typeparam>
-        /// <param name="input"></param>
-        /// <param name="output"></param>
-        /// <returns></returns>
+        /// <typeparam name="TInput">The type of the source object</typeparam>
+        /// <typeparam name="TOutput">The type of the destination object</typeparam>
+        /// <param name="output">The destination object (current instance) to copy properties to</param>
+        /// <param name="input">The source object to copy properties from</param>
+        /// <returns>True if the copy was successful; false if either input or output is null</returns>
+        /// <example>
+        /// <code>
+        /// var dto = new PersonDTO();
+        /// var person = new Person { FirstName = "John", LastName = "Doe" };
+        /// dto.CopyFrom(person); // Copies matching properties
+        /// </code>
+        /// </example>
         public static bool CopyFrom<TInput, TOutput>(this TOutput output, TInput input)
         {
             return CopyMapper<TInput, TOutput>.CopyTo(input, output);
         }
 
         /// <summary>
-        /// Create a new Object and Copy all readable Properties to the returned Instances writable properties 
-        /// matched by equal Name
+        /// Creates a new instance of <typeparamref name="TOutput"/> and copies all readable properties 
+        /// from the input object to the new instance's writable properties, matched by property name (case-sensitive).
         /// </summary>
-        /// <typeparam name="TInput"></typeparam>
-        /// <typeparam name="TOutput"></typeparam>
-        /// <param name="input"></param>
-        /// <returns></returns>
+        /// <typeparam name="TInput">The type of the source object</typeparam>
+        /// <typeparam name="TOutput">The type of the destination object (must have a parameterless constructor)</typeparam>
+        /// <param name="input">The source object to copy properties from</param>
+        /// <returns>A new instance of <typeparamref name="TOutput"/> with properties copied from the input</returns>
+        /// <exception cref="ArgumentNullException">Thrown when input is null</exception>
+        /// <example>
+        /// <code>
+        /// var person = new Person { FirstName = "John", LastName = "Doe" };
+        /// var dto = person.CreateCopy&lt;Person, PersonDTO&gt;();
+        /// </code>
+        /// </example>
         public static TOutput CreateCopy<TInput, TOutput>(this TInput input) where TOutput : new()
         {
             if (input is null)
@@ -59,14 +87,20 @@ namespace DX.Shared
         }
 
         /// <summary>
-        /// returns a Copy for each Object in the input stream
-        /// Copy all readable Properties to the returned Instances writable properties 
-        /// matched by equal Name
+        /// Creates a copy of each object in the input collection. For each input object, creates a new instance
+        /// of <typeparamref name="TOutput"/> and copies all readable properties to the new instance's writable properties,
+        /// matched by property name (case-sensitive).
         /// </summary>
-        /// <typeparam name="TInput"></typeparam>
-        /// <typeparam name="TOutput">must have a parameterless Constructor : new() </typeparam>
-        /// <param name="inputArr">must not be null</param>
-        /// <returns></returns>
+        /// <typeparam name="TInput">The type of the source objects</typeparam>
+        /// <typeparam name="TOutput">The type of the destination objects (must have a parameterless constructor)</typeparam>
+        /// <param name="inputArr">The collection of source objects to copy</param>
+        /// <returns>A lazily-evaluated sequence of new instances with copied properties. Null items in the input are skipped.</returns>
+        /// <example>
+        /// <code>
+        /// List&lt;Person&gt; people = GetPeople();
+        /// IEnumerable&lt;PersonDTO&gt; dtos = people.CopyAll&lt;Person, PersonDTO&gt;();
+        /// </code>
+        /// </example>
         public static IEnumerable<TOutput> CopyAll<TInput, TOutput>(this IEnumerable<TInput> inputArr) where TOutput : new()
         {
             foreach (TInput input in inputArr)
@@ -83,6 +117,11 @@ namespace DX.Shared
         }
     }
 
+    /// <summary>
+    /// Internal cache for property information of a type. 
+    /// Stores readable and writable properties separately to optimize property matching.
+    /// </summary>
+    /// <typeparam name="T">The type to cache property information for</typeparam>
     internal static class PropertyCache<T>
     {
         static readonly IEnumerable<PropertyInfo> writeProps;
@@ -99,20 +138,29 @@ namespace DX.Shared
                 .Where(prop => prop.CanWrite);
         }
 
+        /// <summary>
+        /// Gets all public instance properties that can be read from type <typeparamref name="T"/>.
+        /// </summary>
         public static IEnumerable<PropertyInfo> ReadProps => readProps;
 
+        /// <summary>
+        /// Gets all public instance properties that can be written to on type <typeparamref name="T"/>.
+        /// </summary>
         public static IEnumerable<PropertyInfo> WriteProps => writeProps;
 
     }
 
     /// <summary>
-    /// clones object public properties to a new object
-    /// uses Expressions (compiled and saved to static) - faster than Reflection
-    /// (compilation happens with every new generic type call cause it's a new static class each time)
+    /// Internal mapper that creates new instances and copies properties.
+    /// Uses compiled Expression trees for high performance.
     /// </summary>
-    /// <typeparam name="TInput"></typeparam>
-    /// <typeparam name="TOutput"></typeparam>
-
+    /// <typeparam name="TInput">The source type</typeparam>
+    /// <typeparam name="TOutput">The destination type (must have a parameterless constructor)</typeparam>
+    /// <remarks>
+    /// This class compiles and caches an expression tree in its static constructor.
+    /// Each unique combination of TInput and TOutput creates a separate static instance.
+    /// The compiled expression is cached for extremely fast subsequent calls.
+    /// </remarks>
     internal class CloneMapper<TInput, TOutput> where TOutput : new()
     {
         private static readonly Func<TInput, TOutput> cloner;
@@ -122,6 +170,11 @@ namespace DX.Shared
             cloner = CreateCloner();
         }
 
+        /// <summary>
+        /// Creates and compiles an expression tree that instantiates a new TOutput object
+        /// and assigns all matching properties from TInput.
+        /// </summary>
+        /// <returns>A compiled function that performs the mapping</returns>
         private static Func<TInput, TOutput> CreateCloner()
         {
             ParameterExpression input = Expression.Parameter(typeof(TInput), "input");
@@ -138,6 +191,11 @@ namespace DX.Shared
             return lambda.Compile();
         }
 
+        /// <summary>
+        /// Creates a new instance of <typeparamref name="TOutput"/> and copies all matching properties from the input.
+        /// </summary>
+        /// <param name="input">The source object</param>
+        /// <returns>A new instance with copied properties</returns>
         public static TOutput From(TInput input)
         {
             return cloner(input);
@@ -146,10 +204,16 @@ namespace DX.Shared
 
 
     /// <summary>
-    /// clones object public properties to an existing object
-    /// uses Expressions (compiled and saved to static) - faster than Reflection
-    /// (compilation happens with every new generic type call cause it's a new static class each time)
+    /// Internal mapper that copies properties between existing objects.
+    /// Uses compiled Expression trees for high performance.
     /// </summary>
+    /// <typeparam name="TInput">The source type</typeparam>
+    /// <typeparam name="TOutput">The destination type</typeparam>
+    /// <remarks>
+    /// This class compiles and caches an expression tree in its static constructor.
+    /// Each unique combination of TInput and TOutput creates a separate static instance.
+    /// The compiled expression is cached for extremely fast subsequent calls.
+    /// </remarks>
     internal static class CopyMapper<TInput, TOutput>
     {
         private static readonly Action<TInput, TOutput> copier;
@@ -159,6 +223,11 @@ namespace DX.Shared
             copier = CreateCopier();
         }
 
+        /// <summary>
+        /// Creates and compiles an expression tree that assigns all matching properties 
+        /// from the input object to the output object.
+        /// </summary>
+        /// <returns>A compiled action that performs the property copying</returns>
         private static Action<TInput, TOutput> CreateCopier()
         {
             ParameterExpression input = Expression.Parameter(typeof(TInput), "input");
@@ -180,6 +249,12 @@ namespace DX.Shared
             return lambda.Compile();
         }
 
+        /// <summary>
+        /// Copies all matching properties from the input object to the output object.
+        /// </summary>
+        /// <param name="input">The source object to copy from</param>
+        /// <param name="output">The destination object to copy to</param>
+        /// <returns>True if successful; false if either parameter is null</returns>
         public static bool CopyTo(TInput input, TOutput output)
         {
             if(input is null || output is null)
