@@ -5,6 +5,10 @@ obj/
 # Test files (temporary for validation)
 PropMapper.Test.csproj
 PropMapperTests.cs
+PropMapper.Tests/
+
+# Old implementation backup
+PropMapper.Old.cs
 
 # IDE
 .vs/
