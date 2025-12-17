@@ -83,6 +83,43 @@ namespace DX.Shared
         }
     }
 
+    /// <summary>
+    /// Strongly typed property mapper for mapping objects
+    /// Uses compiled Expression trees for high performance
+    /// </summary>
+    /// <typeparam name="TInput">Source type</typeparam>
+    /// <typeparam name="TOutput">Destination type</typeparam>
+    public static class PropMapper<TInput, TOutput> where TOutput : new()
+    {
+        /// <summary>
+        /// Creates a new instance of TOutput and copies all matching properties from the input object
+        /// Properties are matched by name
+        /// </summary>
+        /// <param name="input">Source object to copy from</param>
+        /// <returns>New instance of TOutput with copied property values</returns>
+        /// <exception cref="ArgumentNullException">Thrown when input is null</exception>
+        public static TOutput From(TInput input)
+        {
+            if (input is null)
+            {
+                throw new ArgumentNullException(nameof(input));
+            }
+            return CloneMapper<TInput, TOutput>.From(input);
+        }
+
+        /// <summary>
+        /// Copies all matching properties from input to output object
+        /// Properties are matched by name
+        /// </summary>
+        /// <param name="input">Source object to copy from</param>
+        /// <param name="output">Destination object to copy to</param>
+        /// <returns>True if successful, false if either input or output is null</returns>
+        public static bool CopyTo(TInput input, TOutput output)
+        {
+            return CopyMapper<TInput, TOutput>.CopyTo(input, output);
+        }
+    }
+
     internal static class PropertyCache<T>
     {
         static readonly IEnumerable<PropertyInfo> writeProps;
