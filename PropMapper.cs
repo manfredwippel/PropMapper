@@ -9,7 +9,7 @@ using System.Reflection;
 namespace DX.Shared
 {
     /// <summary>
-    /// Static class with Extention Methods for cloning objects
+    /// Static class with Extension Methods for cloning objects
     /// </summary>
     public static class ClassClonator
     {
@@ -42,7 +42,7 @@ namespace DX.Shared
         }
 
         /// <summary>
-        /// Craete a new Object and Copy all readable Properties to the returned Instances writable properties 
+        /// Create a new Object and Copy all readable Properties to the returned Instances writable properties 
         /// matched by equal Name
         /// </summary>
         /// <typeparam name="TInput"></typeparam>
@@ -64,7 +64,7 @@ namespace DX.Shared
         /// matched by equal Name
         /// </summary>
         /// <typeparam name="TInput"></typeparam>
-        /// <typeparam name="TOutput">must have a parameterless Konstruktor : new() </typeparam>
+        /// <typeparam name="TOutput">must have a parameterless Constructor : new() </typeparam>
         /// <param name="inputArr">must not be null</param>
         /// <returns></returns>
         public static IEnumerable<TOutput> CopyAll<TInput, TOutput>(this IEnumerable<TInput> inputArr) where TOutput : new()
@@ -85,23 +85,23 @@ namespace DX.Shared
 
     internal static class PropertyCache<T>
     {
-        static readonly IEnumerable<PropertyInfo> _WriteProps;
+        static readonly IEnumerable<PropertyInfo> writeProps;
 
-        static readonly IEnumerable<PropertyInfo> _ReadProps;
+        static readonly IEnumerable<PropertyInfo> readProps;
 
         static PropertyCache()
         {
-            _ReadProps = typeof(T)
+            readProps = typeof(T)
                 .GetProperties(BindingFlags.Public | BindingFlags.Instance)
                 .Where(prop => prop.CanRead);
-            _WriteProps = typeof(T)
+            writeProps = typeof(T)
                 .GetProperties(BindingFlags.Public | BindingFlags.Instance)
                 .Where(prop => prop.CanWrite);
         }
 
-        public static IEnumerable<PropertyInfo> ReadProps { get { return _ReadProps; } }
+        public static IEnumerable<PropertyInfo> ReadProps => readProps;
 
-        public static IEnumerable<PropertyInfo> WriteProps { get { return _WriteProps; } }
+        public static IEnumerable<PropertyInfo> WriteProps => writeProps;
 
     }
 
@@ -115,11 +115,11 @@ namespace DX.Shared
 
     internal class CloneMapper<TInput, TOutput> where TOutput : new()
     {
-        private static readonly Func<TInput, TOutput> _cloner;
+        private static readonly Func<TInput, TOutput> cloner;
         
         static CloneMapper()
         {
-            _cloner = CreateCloner();
+            cloner = CreateCloner();
         }
 
         private static Func<TInput, TOutput> CreateCloner()
@@ -140,7 +140,7 @@ namespace DX.Shared
 
         public static TOutput From(TInput input)
         {
-            return _cloner(input);
+            return cloner(input);
         }
     }
 
@@ -152,11 +152,11 @@ namespace DX.Shared
     /// </summary>
     internal static class CopyMapper<TInput, TOutput>
     {
-        private static readonly Action<TInput, TOutput> _copier;
+        private static readonly Action<TInput, TOutput> copier;
 
         static CopyMapper()
         {
-            _copier = CreateCopier();
+            copier = CreateCopier();
         }
 
         private static Action<TInput, TOutput> CreateCopier()
@@ -186,7 +186,7 @@ namespace DX.Shared
             {
                 return false;
             }
-            _copier(input, output);
+            copier(input, output);
             return true;
         }
     }

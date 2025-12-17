@@ -1,0 +1,15 @@
+# Build artifacts
+bin/
+obj/
+
+# Test files (temporary for validation)
+PropMapper.Test.csproj
+PropMapperTests.cs
+
+# IDE
+.vs/
+.vscode/
+*.user
+*.suo
+*.userprefs
+.DS_Store
