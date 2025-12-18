@@ -4,6 +4,23 @@ Property mapper for .NET. Flat and basic, but **VERY FAST**.
 
 Just [one cs-file](PropMapper.cs), approximately 193 lines of code with comprehensive XML documentation.
 
+## 🆕 Two Versions Available
+
+### Standard Version (PropMapper.cs)
+Uses reflection for initial property discovery, then compiled Expression trees for fast mapping.
+- ✅ **Automatic** property discovery
+- ✅ **Very fast** after first use
+- ✅ Easy to use - no setup required
+
+### No-Reflection Version (PropMapperNoReflection.cs) 
+**NEW!** Zero reflection, explicit mapping registration.
+- ✅ **Zero reflection** overhead
+- ✅ **AOT-friendly** (Native AOT, trimming)
+- ✅ **Predictable performance** on first call
+- ⚠️ Requires manual mapper registration
+
+👉 See [README_NoReflection.md](README_NoReflection.md) for details on the no-reflection version.
+
 ## Installation
 
 Drop the cs-file into your project OR install via [Nuget](https://www.nuget.org/packages/PropMapper/)
