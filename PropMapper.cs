@@ -1,8 +1,10 @@
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Linq.Expressions;
 using System.Reflection;
+using SkiaSharp;
 
 #nullable enable
 
@@ -114,6 +116,207 @@ namespace DX.Shared
                     yield return CloneMapper<TInput, TOutput>.From(input);
                 }
             }
+        }
+
+        /// <summary>
+        /// Generates a visual diagram image showing the property mappings between source and destination types.
+        /// The image displays source properties on the left, destination properties on the right, 
+        /// and lines connecting matching properties.
+        /// </summary>
+        /// <typeparam name="TInput">The source type</typeparam>
+        /// <typeparam name="TOutput">The destination type</typeparam>
+        /// <param name="outputPath">The file path where the image will be saved (supports .png, .jpg, .bmp formats)</param>
+        /// <param name="width">The width of the generated image in pixels (default: 800)</param>
+        /// <param name="height">The height of the generated image in pixels (default: 600)</param>
+        /// <exception cref="ArgumentNullException">Thrown when outputPath is null</exception>
+        /// <exception cref="ArgumentException">Thrown when outputPath is empty or whitespace</exception>
+        /// <example>
+        /// <code>
+        /// ClassClonator.GenerateMappingImage&lt;Person, PersonDTO&gt;("mapping.png");
+        /// </code>
+        /// </example>
+        public static void GenerateMappingImage<TInput, TOutput>(string outputPath, int width = 800, int height = 600)
+        {
+            if (outputPath is null)
+            {
+                throw new ArgumentNullException(nameof(outputPath));
+            }
+            if (string.IsNullOrWhiteSpace(outputPath))
+            {
+                throw new ArgumentException("Output path cannot be empty or whitespace.", nameof(outputPath));
+            }
+
+            var sourceProps = PropertyCache<TInput>.ReadProps.ToList();
+            var destProps = PropertyCache<TOutput>.WriteProps.ToList();
+            
+            // Find matching properties
+            var matchingProps = sourceProps.Join(destProps,
+                sp => sp.Name,
+                dp => dp.Name,
+                (sp, dp) => new { Source = sp, Dest = dp }).ToList();
+
+            using (var surface = SKSurface.Create(new SKImageInfo(width, height)))
+            {
+                var canvas = surface.Canvas;
+                canvas.Clear(SKColors.White);
+
+                // Draw title
+                using (var titlePaint = new SKPaint())
+                {
+                    titlePaint.Color = SKColors.Black;
+                    titlePaint.TextSize = 24;
+                    titlePaint.IsAntialias = true;
+                    titlePaint.Typeface = SKTypeface.FromFamilyName("Arial", SKFontStyle.Bold);
+
+                    string title = $"Property Mapping: {typeof(TInput).Name} → {typeof(TOutput).Name}";
+                    float titleWidth = titlePaint.MeasureText(title);
+                    canvas.DrawText(title, (width - titleWidth) / 2, 30, titlePaint);
+                }
+
+                // Calculate layout
+                int leftX = 50;
+                int rightX = width - 250;
+                int startY = 80;
+                int lineHeight = 25;
+                
+                using (var textPaint = new SKPaint())
+                using (var matchPaint = new SKPaint())
+                using (var highlightPaint = new SKPaint())
+                using (var headerPaint = new SKPaint())
+                {
+                    // Configure paints
+                    textPaint.Color = SKColors.Black;
+                    textPaint.TextSize = 14;
+                    textPaint.IsAntialias = true;
+                    textPaint.Typeface = SKTypeface.FromFamilyName("Arial");
+
+                    matchPaint.Color = SKColors.Green;
+                    matchPaint.StrokeWidth = 2;
+                    matchPaint.IsAntialias = true;
+                    matchPaint.Style = SKPaintStyle.Stroke;
+
+                    highlightPaint.Color = new SKColor(144, 238, 144, 128); // Light green with transparency
+                    highlightPaint.Style = SKPaintStyle.Fill;
+
+                    headerPaint.Color = SKColors.Black;
+                    headerPaint.TextSize = 16;
+                    headerPaint.IsAntialias = true;
+                    headerPaint.Typeface = SKTypeface.FromFamilyName("Arial", SKFontStyle.Bold);
+
+                    // Draw type headers
+                    canvas.DrawText($"Source: {typeof(TInput).Name}", leftX, startY - 30, headerPaint);
+                    canvas.DrawText($"Destination: {typeof(TOutput).Name}", rightX, startY - 30, headerPaint);
+
+                    // Draw source properties
+                    for (int i = 0; i < sourceProps.Count; i++)
+                    {
+                        var prop = sourceProps[i];
+                        string propText = $"{prop.Name} : {GetSimpleTypeName(prop.PropertyType)}";
+                        float y = startY + i * lineHeight;
+                        
+                        // Highlight matched properties
+                        bool isMatched = matchingProps.Any(m => m.Source.Name == prop.Name);
+                        if (isMatched)
+                        {
+                            canvas.DrawRect(leftX - 5, y - 15, 200, lineHeight - 5, highlightPaint);
+                        }
+                        
+                        canvas.DrawText(propText, leftX, y, textPaint);
+                    }
+
+                    // Draw destination properties
+                    for (int i = 0; i < destProps.Count; i++)
+                    {
+                        var prop = destProps[i];
+                        string propText = $"{prop.Name} : {GetSimpleTypeName(prop.PropertyType)}";
+                        float y = startY + i * lineHeight;
+                        
+                        // Highlight matched properties
+                        bool isMatched = matchingProps.Any(m => m.Dest.Name == prop.Name);
+                        if (isMatched)
+                        {
+                            canvas.DrawRect(rightX - 5, y - 15, 200, lineHeight - 5, highlightPaint);
+                        }
+                        
+                        canvas.DrawText(propText, rightX, y, textPaint);
+                    }
+
+                    // Draw connection lines for matched properties
+                    foreach (var match in matchingProps)
+                    {
+                        int sourceIndex = sourceProps.IndexOf(match.Source);
+                        int destIndex = destProps.IndexOf(match.Dest);
+                        
+                        float y1 = startY + sourceIndex * lineHeight - 5;
+                        float y2 = startY + destIndex * lineHeight - 5;
+                        
+                        canvas.DrawLine(leftX + 190, y1, rightX - 10, y2, matchPaint);
+                    }
+                }
+
+                // Draw statistics
+                using (var statsPaint = new SKPaint())
+                {
+                    statsPaint.Color = SKColors.DarkGray;
+                    statsPaint.TextSize = 12;
+                    statsPaint.IsAntialias = true;
+                    statsPaint.Typeface = SKTypeface.FromFamilyName("Arial");
+
+                    string stats = $"Matched: {matchingProps.Count} | Source: {sourceProps.Count} | Destination: {destProps.Count}";
+                    canvas.DrawText(stats, 50, height - 30, statsPaint);
+                }
+
+                // Save the image
+                string? directory = Path.GetDirectoryName(outputPath);
+                if (!string.IsNullOrEmpty(directory) && !Directory.Exists(directory))
+                {
+                    Directory.CreateDirectory(directory);
+                }
+                
+                using (var image = surface.Snapshot())
+                using (var data = image.Encode(GetSkiaImageFormat(outputPath), 100))
+                using (var stream = File.OpenWrite(outputPath))
+                {
+                    data.SaveTo(stream);
+                }
+            }
+        }
+
+        /// <summary>
+        /// Gets a simplified type name for display purposes.
+        /// </summary>
+        private static string GetSimpleTypeName(Type type)
+        {
+            if (type == typeof(int)) return "int";
+            if (type == typeof(string)) return "string";
+            if (type == typeof(bool)) return "bool";
+            if (type == typeof(double)) return "double";
+            if (type == typeof(float)) return "float";
+            if (type == typeof(decimal)) return "decimal";
+            if (type == typeof(long)) return "long";
+            if (type == typeof(DateTime)) return "DateTime";
+            if (type.IsGenericType && type.GetGenericTypeDefinition() == typeof(Nullable<>))
+            {
+                return GetSimpleTypeName(type.GetGenericArguments()[0]) + "?";
+            }
+            return type.Name;
+        }
+
+        /// <summary>
+        /// Determines the image format based on file extension.
+        /// </summary>
+        private static SKEncodedImageFormat GetSkiaImageFormat(string path)
+        {
+            string ext = Path.GetExtension(path).ToLowerInvariant();
+            return ext switch
+            {
+                ".png" => SKEncodedImageFormat.Png,
+                ".jpg" or ".jpeg" => SKEncodedImageFormat.Jpeg,
+                ".bmp" => SKEncodedImageFormat.Bmp,
+                ".gif" => SKEncodedImageFormat.Gif,
+                ".webp" => SKEncodedImageFormat.Webp,
+                _ => SKEncodedImageFormat.Png
+            };
         }
     }
 

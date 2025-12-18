@@ -66,6 +66,20 @@ Copies all objects in a collection to new instances.
 - **Constraints**: `TOutput` must have a parameterless constructor
 - **Note**: Null items in the input collection are skipped
 
+### Static Methods
+
+#### `GenerateMappingImage<TInput, TOutput>(string outputPath, int width = 800, int height = 600)`
+Generates a visual diagram showing property mappings between types.
+- **Parameters**:
+  - `outputPath`: File path where the image will be saved (supports .png, .jpg, .bmp)
+  - `width`: Image width in pixels (default: 800)
+  - `height`: Image height in pixels (default: 600)
+- **Throws**: 
+  - `ArgumentNullException` if outputPath is null
+  - `ArgumentException` if outputPath is empty or whitespace
+- **Requires**: SkiaSharp NuGet package
+- **Example**: `ClassClonator.GenerateMappingImage<Person, PersonDTO>("mapping.png");`
+
 ## Benchmarks
 
 Mapping a simple object with 50 properties, over 100k iterations.
@@ -173,15 +187,37 @@ public void UpdatePerson(Person existingPerson, PersonDTO updatedData)
 }
 ```
 
+### Generating Mapping Diagrams
+
+**New Feature**: Generate visual diagrams showing property mappings between types.
+
+```cs
+// Generate a mapping diagram image
+ClassClonator.GenerateMappingImage<Person, PersonDTO>("mapping.png");
+
+// Customize image dimensions
+ClassClonator.GenerateMappingImage<Person, PersonDTO>("mapping.png", width: 1000, height: 800);
+```
+
+The generated image shows:
+- Source type properties on the left
+- Destination type properties on the right
+- Green highlights for matched properties
+- Green lines connecting matching properties
+- Statistics showing match counts
+
+**Note**: Image generation requires the `SkiaSharp` NuGet package. The core mapping functionality works without any dependencies.
+
 ## Features
 
 ✅ **Fast**: Uses compiled expressions, not reflection  
-✅ **Simple**: Single C# file, no dependencies  
+✅ **Simple**: Single C# file, no dependencies for core mapping (SkiaSharp required for image generation)  
 ✅ **Type-Safe**: Generic methods with compile-time type checking  
 ✅ **Null-Safe**: Built-in null checking for safety  
 ✅ **Flexible**: Works with any POCO objects  
 ✅ **Collection Support**: Bulk copy operations with LINQ integration  
 ✅ **Extension Methods**: Natural, fluent API  
+✅ **Visual Mapping**: Generate diagram images showing property mappings  
 
 ## Limitations
 

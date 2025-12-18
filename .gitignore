@@ -5,6 +5,22 @@ obj/
 # Test files (temporary for validation)
 PropMapper.Test.csproj
 PropMapperTests.cs
+ImageDemo.csproj
+ImageGenerationDemo.cs
+FinalTest.cs
+FinalTest.csproj
+TestDirectoryCreation.cs
+TestDir.csproj
+
+# Generated images (demo outputs)
+*.png
+*.jpg
+*.jpeg
+*.bmp
+*.gif
+
+# Test output directories
+test-output/
 
 # IDE
 .vs/
