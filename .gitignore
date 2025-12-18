@@ -5,6 +5,12 @@ obj/
 # Test files (temporary for validation)
 PropMapper.Test.csproj
 PropMapperTests.cs
+PropMapperComparison.Test.csproj
+PropMapperComparisonTests.cs
+
+# Example files (temporary for validation)
+Example.cs
+Example.csproj
 
 # IDE
 .vs/
