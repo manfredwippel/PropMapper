@@ -293,6 +293,8 @@ MapperRegistry.Register<Order, OrderDTO>(
 );
 ```
 
+**Note:** Be careful with circular references (e.g., Customer contains Order which contains Customer). You'll need to handle these manually to avoid infinite recursion.
+
 ## Error Handling
 
 ### Missing Mapper Registration
