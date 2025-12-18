@@ -71,10 +71,12 @@ Copies all objects in a collection to new instances.
 #### `GenerateMappingImage<TInput, TOutput>(string outputPath, int width = 800, int height = 600)`
 Generates a visual diagram showing property mappings between types.
 - **Parameters**:
-  - `outputPath`: File path where the image will be saved (supports .png, .jpg, .bmp, .gif, .webp)
+  - `outputPath`: File path where the image will be saved (supports .png, .jpg, .bmp)
   - `width`: Image width in pixels (default: 800)
   - `height`: Image height in pixels (default: 600)
-- **Throws**: `ArgumentNullException` if outputPath is null or empty
+- **Throws**: 
+  - `ArgumentNullException` if outputPath is null
+  - `ArgumentException` if outputPath is empty or whitespace
 - **Requires**: SkiaSharp NuGet package
 - **Example**: `ClassClonator.GenerateMappingImage<Person, PersonDTO>("mapping.png");`
 

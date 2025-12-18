@@ -128,7 +128,8 @@ namespace DX.Shared
         /// <param name="outputPath">The file path where the image will be saved (supports .png, .jpg, .bmp formats)</param>
         /// <param name="width">The width of the generated image in pixels (default: 800)</param>
         /// <param name="height">The height of the generated image in pixels (default: 600)</param>
-        /// <exception cref="ArgumentNullException">Thrown when outputPath is null or empty</exception>
+        /// <exception cref="ArgumentNullException">Thrown when outputPath is null</exception>
+        /// <exception cref="ArgumentException">Thrown when outputPath is empty or whitespace</exception>
         /// <example>
         /// <code>
         /// ClassClonator.GenerateMappingImage&lt;Person, PersonDTO&gt;("mapping.png");
@@ -136,9 +137,13 @@ namespace DX.Shared
         /// </example>
         public static void GenerateMappingImage<TInput, TOutput>(string outputPath, int width = 800, int height = 600)
         {
-            if (string.IsNullOrEmpty(outputPath))
+            if (outputPath is null)
             {
                 throw new ArgumentNullException(nameof(outputPath));
+            }
+            if (string.IsNullOrWhiteSpace(outputPath))
+            {
+                throw new ArgumentException("Output path cannot be empty or whitespace.", nameof(outputPath));
             }
 
             var sourceProps = PropertyCache<TInput>.ReadProps.ToList();
@@ -262,6 +267,12 @@ namespace DX.Shared
                 }
 
                 // Save the image
+                string? directory = Path.GetDirectoryName(outputPath);
+                if (!string.IsNullOrEmpty(directory) && !Directory.Exists(directory))
+                {
+                    Directory.CreateDirectory(directory);
+                }
+                
                 using (var image = surface.Snapshot())
                 using (var data = image.Encode(GetSkiaImageFormat(outputPath), 100))
                 using (var stream = File.OpenWrite(outputPath))
