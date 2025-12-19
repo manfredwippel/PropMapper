@@ -206,8 +206,8 @@ namespace DX.Shared
         private static Func<TInput, TOutput> CreateCloner()
         {
             ParameterExpression input = Expression.Parameter(typeof(TInput), "input");
-            // For each property that exists in the destination object, is there a property with the same name in the source object?
-            // 对于目标对象中存在的每个属性，源对象中是否有同名的属性？
+            // Match properties by name - for each destination property, find a source property with the same name
+            // 按名称匹配属性 - 对于每个目标属性，查找具有相同名称的源属性
             IEnumerable<MemberBinding> memberBindings = PropertyCache<TInput>.ReadProps.Join(PropertyCache<TOutput>.WriteProps,
                 sourceProperty => sourceProperty.Name,
                 destinationProperty => destinationProperty.Name,
@@ -270,8 +270,8 @@ namespace DX.Shared
             ParameterExpression input = Expression.Parameter(typeof(TInput), "input");
             ParameterExpression output = Expression.Parameter(typeof(TOutput), "output");
 
-            // For each property that exists in the destination object, is there a property with the same name in the source object?
-            // 对于目标对象中存在的每个属性，源对象中是否有同名的属性？
+            // Match properties by name - for each destination property, find a source property with the same name
+            // 按名称匹配属性 - 对于每个目标属性，查找具有相同名称的源属性
             IEnumerable<BinaryExpression> memberAssignments = PropertyCache<TInput>.ReadProps.Join(PropertyCache<TOutput>.WriteProps, 
                     sourceProperty => sourceProperty.Name,
                     destinationProperty => destinationProperty.Name,
