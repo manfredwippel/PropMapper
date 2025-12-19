@@ -121,7 +121,7 @@ namespace DX.Shared
             {
                 if (input is null)
                 {
-                    // 跳过 null 项 / Skip null items
+                    // Skip null items / 跳过 null 项
                     //System.Diagnostics.Debug.Fail($"Input was null {typeof(TInput)}");
                 }
                 else
@@ -147,11 +147,11 @@ namespace DX.Shared
 
         static PropertyCache()
         {
-            // 获取所有公共实例属性中可读的属性 / Get all readable public instance properties
+            // Get all readable public instance properties / 获取所有公共实例属性中可读的属性
             readProps = typeof(T)
                 .GetProperties(BindingFlags.Public | BindingFlags.Instance)
                 .Where(prop => prop.CanRead);
-            // 获取所有公共实例属性中可写的属性 / Get all writable public instance properties
+            // Get all writable public instance properties / 获取所有公共实例属性中可写的属性
             writeProps = typeof(T)
                 .GetProperties(BindingFlags.Public | BindingFlags.Instance)
                 .Where(prop => prop.CanWrite);
@@ -206,8 +206,8 @@ namespace DX.Shared
         private static Func<TInput, TOutput> CreateCloner()
         {
             ParameterExpression input = Expression.Parameter(typeof(TInput), "input");
-            // 对于目标对象中存在的每个属性，源对象中是否有同名的属性？
             // For each property that exists in the destination object, is there a property with the same name in the source object?
+            // 对于目标对象中存在的每个属性，源对象中是否有同名的属性？
             IEnumerable<MemberBinding> memberBindings = PropertyCache<TInput>.ReadProps.Join(PropertyCache<TOutput>.WriteProps,
                 sourceProperty => sourceProperty.Name,
                 destinationProperty => destinationProperty.Name,
@@ -270,8 +270,8 @@ namespace DX.Shared
             ParameterExpression input = Expression.Parameter(typeof(TInput), "input");
             ParameterExpression output = Expression.Parameter(typeof(TOutput), "output");
 
-            // 对于目标对象中存在的每个属性，源对象中是否有同名的属性？
             // For each property that exists in the destination object, is there a property with the same name in the source object?
+            // 对于目标对象中存在的每个属性，源对象中是否有同名的属性？
             IEnumerable<BinaryExpression> memberAssignments = PropertyCache<TInput>.ReadProps.Join(PropertyCache<TOutput>.WriteProps, 
                     sourceProperty => sourceProperty.Name,
                     destinationProperty => destinationProperty.Name,
