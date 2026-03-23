@@ -2,6 +2,8 @@
 
 Property mapper for .NET. Flat and basic, but **VERY FAST**.
 
+> 🇩🇪 [Deutsche Dokumentation / German documentation](README.de.md)
+
 Just [one cs-file](PropMapper.cs), approximately 193 lines of code with comprehensive XML documentation.
 
 ## Installation
