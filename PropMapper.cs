@@ -11,29 +11,37 @@ namespace DX.Shared
     /// <summary>
     /// Static class with extension methods for fast property mapping between objects.
     /// Uses compiled Expression trees for optimal performance.
+    /// 用于在对象之间进行快速属性映射的扩展方法静态类。
+    /// 使用编译后的表达式树以获得最佳性能。
     /// </summary>
     /// <remarks>
     /// This class provides high-performance object-to-object mapping through extension methods.
     /// The first mapping between two specific types has a small overhead due to expression compilation,
     /// but subsequent calls are extremely fast due to cached compiled expressions.
     /// All operations are thread-safe.
+    /// 此类通过扩展方法提供高性能的对象到对象映射。
+    /// 两种特定类型之间的首次映射由于表达式编译会有少量开销，
+    /// 但后续调用由于缓存了编译后的表达式，速度极快。
+    /// 所有操作均线程安全。
     /// </remarks>
     public static class ClassClonator
     {
         /// <summary>
         /// Copies all readable properties from the input object to the output object's writable properties,
         /// matched by property name (case-sensitive).
+        /// 将输入对象的所有可读属性复制到输出对象的可写属性（按属性名称区分大小写匹配）。
         /// </summary>
-        /// <typeparam name="TInput">The type of the source object</typeparam>
-        /// <typeparam name="TOutput">The type of the destination object</typeparam>
-        /// <param name="input">The source object to copy properties from</param>
-        /// <param name="output">The destination object to copy properties to</param>
-        /// <returns>True if the copy was successful; false if either input or output is null</returns>
+        /// <typeparam name="TInput">The type of the source object / 源对象的类型</typeparam>
+        /// <typeparam name="TOutput">The type of the destination object / 目标对象的类型</typeparam>
+        /// <param name="input">The source object to copy properties from / 要复制属性的源对象</param>
+        /// <param name="output">The destination object to copy properties to / 要将属性复制到的目标对象</param>
+        /// <returns>True if the copy was successful; false if either input or output is null /
+        /// 复制成功返回 true；输入或输出为 null 时返回 false</returns>
         /// <example>
         /// <code>
         /// var person = new Person { FirstName = "John", LastName = "Doe" };
         /// var dto = new PersonDTO();
-        /// person.CopyTo(dto); // Copies matching properties
+        /// person.CopyTo(dto); // Copies matching properties / 复制匹配的属性
         /// </code>
         /// </example>
         public static bool CopyTo<TInput, TOutput>(this TInput input, TOutput output)
@@ -44,17 +52,20 @@ namespace DX.Shared
         /// <summary>
         /// Copies all readable properties from the input object to the current object's writable properties,
         /// matched by property name (case-sensitive). This is the inverse of <see cref="CopyTo{TInput,TOutput}"/>.
+        /// 将输入对象的所有可读属性复制到当前对象的可写属性（按属性名称区分大小写匹配）。
+        /// 这是 <see cref="CopyTo{TInput,TOutput}"/> 的反向操作。
         /// </summary>
-        /// <typeparam name="TInput">The type of the source object</typeparam>
-        /// <typeparam name="TOutput">The type of the destination object</typeparam>
-        /// <param name="output">The destination object (current instance) to copy properties to</param>
-        /// <param name="input">The source object to copy properties from</param>
-        /// <returns>True if the copy was successful; false if either input or output is null</returns>
+        /// <typeparam name="TInput">The type of the source object / 源对象的类型</typeparam>
+        /// <typeparam name="TOutput">The type of the destination object / 目标对象的类型</typeparam>
+        /// <param name="output">The destination object (current instance) to copy properties to / 要将属性复制到的目标对象（当前实例）</param>
+        /// <param name="input">The source object to copy properties from / 要复制属性的源对象</param>
+        /// <returns>True if the copy was successful; false if either input or output is null /
+        /// 复制成功返回 true；输入或输出为 null 时返回 false</returns>
         /// <example>
         /// <code>
         /// var dto = new PersonDTO();
         /// var person = new Person { FirstName = "John", LastName = "Doe" };
-        /// dto.CopyFrom(person); // Copies matching properties
+        /// dto.CopyFrom(person); // Copies matching properties / 复制匹配的属性
         /// </code>
         /// </example>
         public static bool CopyFrom<TInput, TOutput>(this TOutput output, TInput input)
@@ -65,12 +76,15 @@ namespace DX.Shared
         /// <summary>
         /// Creates a new instance of <typeparamref name="TOutput"/> and copies all readable properties 
         /// from the input object to the new instance's writable properties, matched by property name (case-sensitive).
+        /// 创建 <typeparamref name="TOutput"/> 的新实例，并将输入对象的所有可读属性复制到新实例的可写属性（按属性名称区分大小写匹配）。
         /// </summary>
-        /// <typeparam name="TInput">The type of the source object</typeparam>
-        /// <typeparam name="TOutput">The type of the destination object (must have a parameterless constructor)</typeparam>
-        /// <param name="input">The source object to copy properties from</param>
-        /// <returns>A new instance of <typeparamref name="TOutput"/> with properties copied from the input</returns>
-        /// <exception cref="ArgumentNullException">Thrown when input is null</exception>
+        /// <typeparam name="TInput">The type of the source object / 源对象的类型</typeparam>
+        /// <typeparam name="TOutput">The type of the destination object (must have a parameterless constructor) /
+        /// 目标对象的类型（必须具有无参数构造函数）</typeparam>
+        /// <param name="input">The source object to copy properties from / 要复制属性的源对象</param>
+        /// <returns>A new instance of <typeparamref name="TOutput"/> with properties copied from the input /
+        /// 具有从输入对象复制的属性的 <typeparamref name="TOutput"/> 新实例</returns>
+        /// <exception cref="ArgumentNullException">Thrown when input is null / 当输入为 null 时引发</exception>
         /// <example>
         /// <code>
         /// var person = new Person { FirstName = "John", LastName = "Doe" };
@@ -90,11 +104,15 @@ namespace DX.Shared
         /// Creates a copy of each object in the input collection. For each input object, creates a new instance
         /// of <typeparamref name="TOutput"/> and copies all readable properties to the new instance's writable properties,
         /// matched by property name (case-sensitive).
+        /// 复制输入集合中的每个对象。对于每个输入对象，创建 <typeparamref name="TOutput"/> 的新实例，
+        /// 并将所有可读属性复制到新实例的可写属性（按属性名称区分大小写匹配）。
         /// </summary>
-        /// <typeparam name="TInput">The type of the source objects</typeparam>
-        /// <typeparam name="TOutput">The type of the destination objects (must have a parameterless constructor)</typeparam>
-        /// <param name="inputArr">The collection of source objects to copy</param>
-        /// <returns>A lazily-evaluated sequence of new instances with copied properties. Null items in the input are skipped.</returns>
+        /// <typeparam name="TInput">The type of the source objects / 源对象的类型</typeparam>
+        /// <typeparam name="TOutput">The type of the destination objects (must have a parameterless constructor) /
+        /// 目标对象的类型（必须具有无参数构造函数）</typeparam>
+        /// <param name="inputArr">The collection of source objects to copy / 要复制的源对象集合</param>
+        /// <returns>A lazily-evaluated sequence of new instances with copied properties. Null items in the input are skipped. /
+        /// 具有复制属性的新实例的延迟求值序列。输入中的 null 项将被跳过。</returns>
         /// <example>
         /// <code>
         /// List&lt;Person&gt; people = GetPeople();
@@ -120,8 +138,10 @@ namespace DX.Shared
     /// <summary>
     /// Internal cache for property information of a type. 
     /// Stores readable and writable properties separately to optimize property matching.
+    /// 类型属性信息的内部缓存。
+    /// 分别存储可读和可写属性以优化属性匹配。
     /// </summary>
-    /// <typeparam name="T">The type to cache property information for</typeparam>
+    /// <typeparam name="T">The type to cache property information for / 要缓存属性信息的类型</typeparam>
     internal static class PropertyCache<T>
     {
         static readonly IEnumerable<PropertyInfo> writeProps;
@@ -140,11 +160,13 @@ namespace DX.Shared
 
         /// <summary>
         /// Gets all public instance properties that can be read from type <typeparamref name="T"/>.
+        /// 获取可从类型 <typeparamref name="T"/> 读取的所有公共实例属性。
         /// </summary>
         public static IEnumerable<PropertyInfo> ReadProps => readProps;
 
         /// <summary>
         /// Gets all public instance properties that can be written to on type <typeparamref name="T"/>.
+        /// 获取可写入类型 <typeparamref name="T"/> 的所有公共实例属性。
         /// </summary>
         public static IEnumerable<PropertyInfo> WriteProps => writeProps;
 
@@ -153,13 +175,19 @@ namespace DX.Shared
     /// <summary>
     /// Internal mapper that creates new instances and copies properties.
     /// Uses compiled Expression trees for high performance.
+    /// 创建新实例并复制属性的内部映射器。
+    /// 使用编译后的表达式树以获得高性能。
     /// </summary>
-    /// <typeparam name="TInput">The source type</typeparam>
-    /// <typeparam name="TOutput">The destination type (must have a parameterless constructor)</typeparam>
+    /// <typeparam name="TInput">The source type / 源类型</typeparam>
+    /// <typeparam name="TOutput">The destination type (must have a parameterless constructor) /
+    /// 目标类型（必须具有无参数构造函数）</typeparam>
     /// <remarks>
     /// This class compiles and caches an expression tree in its static constructor.
     /// Each unique combination of TInput and TOutput creates a separate static instance.
     /// The compiled expression is cached for extremely fast subsequent calls.
+    /// 此类在其静态构造函数中编译并缓存表达式树。
+    /// TInput 和 TOutput 的每种唯一组合都会创建一个单独的静态实例。
+    /// 编译后的表达式被缓存以供极快的后续调用使用。
     /// </remarks>
     internal class CloneMapper<TInput, TOutput> where TOutput : new()
     {
@@ -173,12 +201,15 @@ namespace DX.Shared
         /// <summary>
         /// Creates and compiles an expression tree that instantiates a new TOutput object
         /// and assigns all matching properties from TInput.
+        /// 创建并编译一个表达式树，该表达式树实例化一个新的 TOutput 对象，
+        /// 并从 TInput 分配所有匹配的属性。
         /// </summary>
-        /// <returns>A compiled function that performs the mapping</returns>
+        /// <returns>A compiled function that performs the mapping / 执行映射的已编译函数</returns>
         private static Func<TInput, TOutput> CreateCloner()
         {
             ParameterExpression input = Expression.Parameter(typeof(TInput), "input");
             // For each property that exists in the destination object, is there a property with the same name in the source object?
+            // 对于目标对象中存在的每个属性，源对象中是否有同名属性？
             IEnumerable<MemberBinding> memberBindings = PropertyCache<TInput>.ReadProps.Join(PropertyCache<TOutput>.WriteProps,
                 sourceProperty => sourceProperty.Name,
                 destinationProperty => destinationProperty.Name,
@@ -193,9 +224,10 @@ namespace DX.Shared
 
         /// <summary>
         /// Creates a new instance of <typeparamref name="TOutput"/> and copies all matching properties from the input.
+        /// 创建 <typeparamref name="TOutput"/> 的新实例，并从输入对象复制所有匹配的属性。
         /// </summary>
-        /// <param name="input">The source object</param>
-        /// <returns>A new instance with copied properties</returns>
+        /// <param name="input">The source object / 源对象</param>
+        /// <returns>A new instance with copied properties / 具有复制属性的新实例</returns>
         public static TOutput From(TInput input)
         {
             return cloner(input);
@@ -206,13 +238,18 @@ namespace DX.Shared
     /// <summary>
     /// Internal mapper that copies properties between existing objects.
     /// Uses compiled Expression trees for high performance.
+    /// 在现有对象之间复制属性的内部映射器。
+    /// 使用编译后的表达式树以获得高性能。
     /// </summary>
-    /// <typeparam name="TInput">The source type</typeparam>
-    /// <typeparam name="TOutput">The destination type</typeparam>
+    /// <typeparam name="TInput">The source type / 源类型</typeparam>
+    /// <typeparam name="TOutput">The destination type / 目标类型</typeparam>
     /// <remarks>
     /// This class compiles and caches an expression tree in its static constructor.
     /// Each unique combination of TInput and TOutput creates a separate static instance.
     /// The compiled expression is cached for extremely fast subsequent calls.
+    /// 此类在其静态构造函数中编译并缓存表达式树。
+    /// TInput 和 TOutput 的每种唯一组合都会创建一个单独的静态实例。
+    /// 编译后的表达式被缓存以供极快的后续调用使用。
     /// </remarks>
     internal static class CopyMapper<TInput, TOutput>
     {
@@ -226,14 +263,16 @@ namespace DX.Shared
         /// <summary>
         /// Creates and compiles an expression tree that assigns all matching properties 
         /// from the input object to the output object.
+        /// 创建并编译一个表达式树，该表达式树将输入对象的所有匹配属性分配给输出对象。
         /// </summary>
-        /// <returns>A compiled action that performs the property copying</returns>
+        /// <returns>A compiled action that performs the property copying / 执行属性复制的已编译操作</returns>
         private static Action<TInput, TOutput> CreateCopier()
         {
             ParameterExpression input = Expression.Parameter(typeof(TInput), "input");
             ParameterExpression output = Expression.Parameter(typeof(TOutput), "output");
 
             // For each property that exists in the destination object, is there a property with the same name in the source object?
+            // 对于目标对象中存在的每个属性，源对象中是否有同名属性？
             IEnumerable<BinaryExpression> memberAssignments = PropertyCache<TInput>.ReadProps.Join(PropertyCache<TOutput>.WriteProps, 
                     sourceProperty => sourceProperty.Name,
                     destinationProperty => destinationProperty.Name,
@@ -251,10 +290,12 @@ namespace DX.Shared
 
         /// <summary>
         /// Copies all matching properties from the input object to the output object.
+        /// 将输入对象的所有匹配属性复制到输出对象。
         /// </summary>
-        /// <param name="input">The source object to copy from</param>
-        /// <param name="output">The destination object to copy to</param>
-        /// <returns>True if successful; false if either parameter is null</returns>
+        /// <param name="input">The source object to copy from / 要复制的源对象</param>
+        /// <param name="output">The destination object to copy to / 要复制到的目标对象</param>
+        /// <returns>True if successful; false if either parameter is null /
+        /// 成功返回 true；任意参数为 null 时返回 false</returns>
         public static bool CopyTo(TInput input, TOutput output)
         {
             if(input is null || output is null)
